@@ -84,6 +84,10 @@ def initiative_sort_key(character):
     return (-character.initiative, -dex, character.name, number)
 
 class Combat:
+    """Manage a single combat encounter.
+
+    Characters are added to combat via :py:func:`add`.
+    """
     def __init__(self, campaign, name):
         self.campaign = campaign
         self.name = name
@@ -91,6 +95,18 @@ class Combat:
         self.combatant_name_counts = Counter()
 
     def add(self, name, initiative, **kwargs):
+        """Add a character to combat.
+
+        Characters with duplicate names automatically have their number incremented.
+
+        :param name: Name of the character to add to combat.
+        :param initiative: Value to use when ordering characters in combat.
+        :param ac: Armor class value to display in combat
+        :param resistances: Dictionary of per-type damage modifiers (such as 0.5 or 2) to apply to each damage type
+        :param hp: Hit points to use for characters that should have their HP tracked
+        :param dex: Dexterity ability score to use to break ties in initiative order
+        :param saves: Dictionary of per-ability score saving throw modifiers to display
+        """
         kwargs = self.campaign.get_combat_stats(name, **kwargs)
 
         self.combatant_name_counts[name] += 1
@@ -104,6 +120,7 @@ class Combat:
         return combatant
 
     def remove(self, combatant):
+        """Remove a character from combat."""
         self.combatants.remove(combatant)
 
     def _repr_html_(self):

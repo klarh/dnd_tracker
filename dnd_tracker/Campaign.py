@@ -2,6 +2,7 @@ from collections import defaultdict
 from .Combat import Combat
 
 class Campaign:
+    """Keep a record of statistics associated with characters."""
     def __init__(self, name=None):
         self.name = name
         self._combat_stats = defaultdict(dict)
@@ -20,4 +21,5 @@ class Campaign:
 default_campaign = Campaign('default')
 
 def begin_combat(name):
+    """Quickly begin combat in a default (initially empty) campaign."""
     return default_campaign.begin_combat(name)
