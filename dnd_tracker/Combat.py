@@ -57,7 +57,8 @@ class Character:
 
 def initiative_sort_key(character):
     dex = character.dex or 10
-    return (-character.initiative, -dex, character.name, character.number)
+    number = character.number or 0
+    return (-character.initiative, -dex, character.name, number)
 
 class Combat:
     def __init__(self, campaign, name):
