@@ -77,7 +77,7 @@ class Combat:
         combatant = Character(self, name, initiative, **kwargs)
         self.combatants.append(combatant)
         self.combatants.sort(key=initiative_sort_key)
-        return self
+        return combatant
 
     def remove(self, combatant):
         self.combatants.remove(combatant)
