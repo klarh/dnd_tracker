@@ -2,6 +2,29 @@ from collections import Counter
 
 _stats = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
+_combat_css = """
+<style>
+table.combat_tracker {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+table.combat_tracker th {
+    font-size: 107%;
+    border-bottom: 2px dashed gray;
+}
+
+table.combat_tracker th, td {
+    padding: 0.25em 1em;
+}
+
+table.combat_tracker tr:nth-child(even) {
+    background-color: #f0f0f0;
+}
+</style>
+"""
+
 _damage_types = [
     ('acid', 'a', 'ac'),
     ('bludgeoning', 'b', 'bl'),
@@ -86,20 +109,32 @@ class Combat:
     def _repr_html_(self):
         pieces = []
 
-        pieces.append('<ul>')
+        pieces.append(_combat_css)
+        pieces.append('<table class="combat_tracker">')
+        pieces.append('<thead><tr>')
+        pieces.append('<th><b>Name</b></th>')
+        pieces.append('<th><b>AC</b></th>')
+        pieces.append('<th><b>HP</b></th>')
+        pieces.append('<th style="min-width: 3em"></th>')
+        for stat in _stats:
+            pieces.append('<th><b>{}</b></th>'.format(stat.upper()))
+        pieces.append('</tr></thead>')
+
         for char in self.combatants:
+            pieces.append('<tr>')
             name = char.name + (' {}'.format(char.number) if char.number is not None else '')
             health = ': {}'.format(char.hp) if char.hp is not None else ''
+
+            pieces.append('<td><b>{}</b></td>'.format(name))
+            pieces.append('<td><b>{}</b></td>'.format(char.ac))
+            pieces.append('<td><b>{}</b></td>'.format(health))
+            pieces.append('<td></td>')
+
             if char.saves:
-                saves = '&nbsp;'.join('{}: {}'.format(stat, char.saves.get(stat, 0))
-                                for stat in _stats)
-                saves = '<span style="position: absolute; right: 1em">{}</span>'.format(saves)
+                pieces.extend('<td>{}</td>'.format(char.saves.get(stat, 0)) for stat in _stats)
             else:
-                saves = ''
-            line = '<li><b>{name} ({ac})</b>{health}{saves}</li>'.format(
-                name=name, ac=char.ac, health=health, saves=saves)
-            pieces.append(line)
-        pieces.append('</ul>')
+                pieces.extend(len(_stats)*['<td></td>'])
+            pieces.append('</tr>')
+        pieces.append('</table>')
 
         return ''.join(pieces)
-
