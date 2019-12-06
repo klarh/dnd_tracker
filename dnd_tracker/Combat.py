@@ -18,7 +18,7 @@ _damage_types = [
     ('thunder', 't', 'th'),
 ]
 
-_damage_type_map = {}
+_damage_type_map = {None: None}
 
 for names in _damage_types:
     canonical_name = names[0]
