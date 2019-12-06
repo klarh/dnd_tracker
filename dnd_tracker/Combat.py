@@ -123,7 +123,7 @@ class Combat:
         for char in self.combatants:
             pieces.append('<tr>')
             name = char.name + (' {}'.format(char.number) if char.number is not None else '')
-            health = ': {}'.format(char.hp) if char.hp is not None else ''
+            health = str(char.hp) if char.hp is not None else ''
 
             pieces.append('<td><b>{}</b></td>'.format(name))
             pieces.append('<td><b>{}</b></td>'.format(char.ac))
