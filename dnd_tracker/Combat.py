@@ -93,7 +93,7 @@ class Combat:
             if char.saves:
                 saves = '&nbsp;'.join('{}: {}'.format(stat, char.saves.get(stat, 0))
                                 for stat in _stats)
-                saves = '<span style="text-align: right>{}</span>'.format(saves)
+                saves = '<span style="position: absolute; right: 1em">{}</span>'.format(saves)
             else:
                 saves = ''
             line = '<li><b>{name} ({ac})</b>{health}{saves}</li>'.format(
