@@ -64,7 +64,7 @@ class Character:
     def take_damage(self, amount, type=None):
         type = _damage_type_map[type]
         true_amount = int(amount*self.resistances.get(type, 1))
-        self.combat.record_take_damage(self, amount, type, true_amount)
+        self.combat._record_take_damage(self, amount, type, true_amount)
         if self.hp is not None:
             self.hp -= true_amount
             self.hp = max(0, self.hp)
@@ -72,7 +72,7 @@ class Character:
     def damage(self, other, amount, type=None):
         type = _damage_type_map[type]
         true_amount = int(amount*self.resistances.get(type, 1))
-        self.combat.record_damage(self, other, amount, type, true_amount)
+        self.combat._record_damage(self, other, amount, type, true_amount)
         other.take_damage(amount, type)
         return self.combat
 
@@ -81,7 +81,7 @@ class Character:
 
     def heal(self, amount):
         self.hp += amount
-        self.combat.record_heal(self, amount)
+        self.combat._record_heal(self, amount)
 
     def get_numbered_name(self):
         return self.name + (' {}'.format(self.number) if self.number is not None else '')
@@ -129,6 +129,7 @@ class Combat:
         return combatant
 
     def plot_damage_summary(self, figure=None):
+        """Create a bar plot of the damage given by each combatant"""
         if figure is None:
             import matplotlib, matplotlib.pyplot as pp
             figure = pp.figure()
@@ -152,17 +153,17 @@ class Combat:
         """Remove a character from combat."""
         self.combatants.remove(combatant)
 
-    def record_take_damage(self, target, amount, type, true_amount):
+    def _record_take_damage(self, target, amount, type, true_amount):
         result = dict(type='take_damage', target=target, amount=amount,
             damage_type=type, true_amount=true_amount)
         self._combat_log.append(result)
 
-    def record_damage(self, source, target, amount, type, true_amount):
+    def _record_damage(self, source, target, amount, type, true_amount):
         result = dict(type='damage', source=source, target=target,
             amount=amount, damage_type=type, true_amount=true_amount)
         self._combat_log.append(result)
 
-    def record_heal(self, target, amount):
+    def _record_heal(self, target, amount):
         result = dict(target=target, amount=amount)
         self._combat_log.append(result)
 
