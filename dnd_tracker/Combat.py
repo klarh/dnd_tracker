@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 
 _stats = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
@@ -64,11 +64,15 @@ class Character:
     def take_damage(self, amount, type=None):
         type = _damage_type_map[type]
         true_amount = int(amount*self.resistances.get(type, 1))
+        self.combat.record_take_damage(self, amount, type, true_amount)
         if self.hp is not None:
             self.hp -= true_amount
             self.hp = max(0, self.hp)
 
     def damage(self, other, amount, type=None):
+        type = _damage_type_map[type]
+        true_amount = int(amount*self.resistances.get(type, 1))
+        self.combat.record_damage(self, other, amount, type, true_amount)
         other.take_damage(amount, type)
         return self.combat
 
@@ -77,6 +81,10 @@ class Character:
 
     def heal(self, amount):
         self.hp += amount
+        self.combat.record_heal(self, amount)
+
+    def get_numbered_name(self):
+        return self.name + (' {}'.format(self.number) if self.number is not None else '')
 
 def initiative_sort_key(character):
     dex = character.dex or 10
@@ -93,6 +101,7 @@ class Combat:
         self.name = name
         self.combatants = []
         self.combatant_name_counts = Counter()
+        self._combat_log = []
 
     def add(self, name, initiative, **kwargs):
         """Add a character to combat.
@@ -119,9 +128,43 @@ class Combat:
         self.combatants.sort(key=initiative_sort_key)
         return combatant
 
+    def plot_damage_summary(self, figure=None):
+        if figure is None:
+            import matplotlib, matplotlib.pyplot as pp
+            figure = pp.figure()
+
+        ax = figure.gca()
+        xs = list(range(len(self.combatants)))
+        damage_given = defaultdict(lambda: 0)
+        for entry in self._combat_log:
+            if entry['type'] != 'damage':
+                continue
+
+            damage_given[entry['source']] += entry['true_amount']
+
+        ys = [damage_given[c] for c in self.combatants]
+        ax.bar(xs, ys)
+        ax.set_xticks(xs)
+        ax.set_xticklabels([c.get_numbered_name() for c in self.combatants])
+        return figure
+
     def remove(self, combatant):
         """Remove a character from combat."""
         self.combatants.remove(combatant)
+
+    def record_take_damage(self, target, amount, type, true_amount):
+        result = dict(type='take_damage', target=target, amount=amount,
+            damage_type=type, true_amount=true_amount)
+        self._combat_log.append(result)
+
+    def record_damage(self, source, target, amount, type, true_amount):
+        result = dict(type='damage', source=source, target=target,
+            amount=amount, damage_type=type, true_amount=true_amount)
+        self._combat_log.append(result)
+
+    def record_heal(self, target, amount):
+        result = dict(target=target, amount=amount)
+        self._combat_log.append(result)
 
     def _repr_html_(self):
         pieces = []
@@ -139,7 +182,7 @@ class Combat:
 
         for char in self.combatants:
             pieces.append('<tr>')
-            name = char.name + (' {}'.format(char.number) if char.number is not None else '')
+            name = char.get_numbered_name()
             health = str(char.hp) if char.hp is not None else ''
 
             pieces.append('<td><b>{}</b></td>'.format(name))
