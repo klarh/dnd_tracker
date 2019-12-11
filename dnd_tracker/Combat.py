@@ -149,6 +149,11 @@ class Combat:
         ax.set_xticklabels([c.get_numbered_name() for c in self.combatants])
         return figure
 
+    def show(self):
+        """Immediately display the combat table"""
+        import IPython, IPython.display
+        IPython.display.display(self)
+
     def remove(self, combatant):
         """Remove a character from combat."""
         self.combatants.remove(combatant)
