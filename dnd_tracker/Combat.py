@@ -47,6 +47,9 @@ for names in _damage_types:
     for name in names:
         _damage_type_map[name] = canonical_name
 
+def get_damage_type(type=None):
+    return _damage_type_map[type]
+
 class Character:
     def __init__(self, combat, name, initiative, number=None, ac=None, resistances={},
                 hp=None, dex=None, saves=None):
@@ -60,17 +63,23 @@ class Character:
         self.dex = dex
         self.saves = saves
 
+    def get_true_damage(self, amount, type=None):
+        type = get_damage_type(type)
+        return int(amount*self.resistances.get(type, 1))
+
     def take_damage(self, amount, type=None):
-        type = _damage_type_map[type]
-        true_amount = int(amount*self.resistances.get(type, 1))
+        type = get_damage_type(type)
+        true_amount = self.get_true_damage(amount, type)
         self.combat._record_take_damage(self, amount, type, true_amount)
         if self.hp is not None:
             self.hp -= true_amount
             self.hp = max(0, self.hp)
 
     def damage(self, other, amount, type=None):
-        type = _damage_type_map[type]
-        true_amount = int(amount*self.resistances.get(type, 1))
+        type = get_damage_type(type)
+        true_amount = other.get_true_damage(amount, type)
+        if other.hp is not None:
+            true_amount = min(other.hp, true_amount)
         self.combat._record_damage(self, other, amount, type, true_amount)
         other.take_damage(amount, type)
         return self.combat
