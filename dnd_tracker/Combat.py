@@ -29,7 +29,6 @@ _damage_types = [
     ('acid', 'a', 'ac'),
     ('bludgeoning', 'b', 'bl'),
     ('cold', 'c', 'co'),
-    ('electric', 'e', 'el'),
     ('fire', 'i', 'fi'),
     ('force', 'f', 'fo'),
     ('lightning', 'l', 'li'),
