@@ -177,7 +177,7 @@ class Combat:
         self._combat_log.append(result)
 
     def _record_heal(self, target, amount):
-        result = dict(target=target, amount=amount)
+        result = dict(type='heal', target=target, amount=amount)
         self._combat_log.append(result)
 
     def _repr_html_(self):
