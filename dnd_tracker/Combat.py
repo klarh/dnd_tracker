@@ -1,4 +1,7 @@
 from collections import Counter, defaultdict
+import logging
+
+logger = logging.getLogger(__name__)
 
 _stats = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
@@ -110,6 +113,7 @@ class Combat:
         self.combatants = []
         self.combatant_name_counts = Counter()
         self._combat_log = []
+        self._damage_warnings = set()
 
     def add(self, name, initiative, **kwargs):
         """Add a character to combat.
@@ -134,6 +138,15 @@ class Combat:
         combatant = Character(self, name, initiative, **kwargs)
         self.combatants.append(combatant)
         self.combatants.sort(key=initiative_sort_key)
+
+        for res in combatant.resistances:
+            key = (combatant.name, res)
+            if res not in _damage_type_map and key not in self._damage_warnings:
+                self._damage_warnings.add(key)
+                msg = ('{}: Non-trivial resistance type "{}" will not be '
+                       'automatically applied').format(*key)
+                logger.warning(msg)
+
         return combatant
 
     def plot_damage_summary(self, figure=None):
