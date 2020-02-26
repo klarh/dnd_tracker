@@ -112,8 +112,32 @@ class Combat:
         self.name = name
         self.combatants = []
         self.combatant_name_counts = Counter()
-        self._combat_log = []
         self._damage_warnings = set()
+
+        self._initialize_db()
+
+    def _initialize_db(self):
+        with self.campaign._connection as c:
+            c.execute('CREATE TABLE IF NOT EXISTS combats '
+                      '(name STR, campaign_id INT, '
+                      'CONSTRAINT unique_campaign_name UNIQUE (name, campaign_id)'
+                      'ON CONFLICT IGNORE)')
+            c.execute('INSERT INTO combats VALUES (?, ?)',
+                      (self.name, self.campaign._db_id))
+
+            for (identifier,) in c.execute(
+                    'SELECT rowid FROM combats WHERE name = ? AND campaign_id = ?',
+                    (self.name, self.campaign._db_id)):
+                pass
+
+            self._db_id = identifier
+
+            c.execute('CREATE TABLE IF NOT EXISTS damage_taken '
+                      '(combat_id INT, target TEXT, type TEXT, amount INT, true_amount INT)')
+            c.execute('CREATE TABLE IF NOT EXISTS damage_given '
+                      '(combat_id INT, target TEXT, source TEXT, type TEXT, amount INT, true_amount INT)')
+            c.execute('CREATE TABLE IF NOT EXISTS healing '
+                      '(combat_id INT, target TEXT, true_amount INT)')
 
     def add(self, name, initiative, **kwargs):
         """Add a character to combat.
@@ -158,13 +182,13 @@ class Combat:
         ax = figure.gca()
         xs = list(range(len(self.combatants)))
         damage_given = defaultdict(lambda: 0)
-        for entry in self._combat_log:
-            if entry['type'] != 'damage':
-                continue
 
-            damage_given[entry['source']] += entry['true_amount']
+        query = 'SELECT source, true_amount FROM damage_given WHERE combat_id = ?'
+        values = (self._db_id,)
+        for (source, true_amount) in self.campaign._connection.execute(query, values):
+            damage_given[source] += true_amount
 
-        ys = [damage_given[c] for c in self.combatants]
+        ys = [damage_given[c.get_numbered_name()] for c in self.combatants]
         ax.bar(xs, ys)
         ax.set_xticks(xs)
         ax.set_xticklabels([c.get_numbered_name() for c in self.combatants])
@@ -180,18 +204,20 @@ class Combat:
         self.combatants.remove(combatant)
 
     def _record_take_damage(self, target, amount, type, true_amount):
-        result = dict(type='take_damage', target=target, amount=amount,
-            damage_type=type, true_amount=true_amount)
-        self._combat_log.append(result)
+        query = 'INSERT INTO damage_taken VALUES (?, ?, ?, ?, ?)'
+        values = (self._db_id, target.get_numbered_name(), type, amount, true_amount)
+        self.campaign._connection.execute(query, values)
 
     def _record_damage(self, source, target, amount, type, true_amount):
-        result = dict(type='damage', source=source, target=target,
-            amount=amount, damage_type=type, true_amount=true_amount)
-        self._combat_log.append(result)
+        query = 'INSERT INTO damage_given VALUES (?, ?, ?, ?, ?, ?)'
+        values = (self._db_id, target.get_numbered_name(),
+                  source.get_numbered_name(), type, amount, true_amount)
+        self.campaign._connection.execute(query, values)
 
     def _record_heal(self, target, amount):
-        result = dict(type='heal', target=target, amount=amount)
-        self._combat_log.append(result)
+        query = 'INSERT INTO healing VALUES (?, ?, ?)'
+        values = (self._db_id, target.get_numbered_name(), amount)
+        self.campaign._connection.execute(query, values)
 
     def _repr_html_(self):
         pieces = []
