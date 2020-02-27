@@ -139,6 +139,10 @@ class Combat:
             c.execute('CREATE TABLE IF NOT EXISTS healing '
                       '(combat_id INT, target TEXT, true_amount INT)')
 
+            c.execute('DELETE FROM damage_taken WHERE combat_id = ?', (self._db_id,))
+            c.execute('DELETE FROM damage_given WHERE combat_id = ?', (self._db_id,))
+            c.execute('DELETE FROM healing WHERE combat_id = ?', (self._db_id,))
+
     def add(self, name, initiative, **kwargs):
         """Add a character to combat.
 
