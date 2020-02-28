@@ -62,7 +62,7 @@ class Character:
         self.number = number
         self.ac = ac
         self.resistances = dict(resistances)
-        self.hp = hp
+        self.hp = self.initial_hp = hp
         self.dex = dex
         self.saves = saves
 
@@ -240,7 +240,11 @@ class Combat:
         for char in self.combatants:
             pieces.append('<tr>')
             name = char.get_numbered_name()
-            health = str(char.hp) if char.hp is not None else ''
+            if char.hp is not None:
+                percentage = round(100*char.hp/char.initial_hp)
+                health = '{} ({:d}%)'.format(char.hp, percentage)
+            else:
+                health = ''
 
             pieces.append('<td><b>{}</b></td>'.format(name))
             pieces.append('<td><b>{}</b></td>'.format(char.ac))
