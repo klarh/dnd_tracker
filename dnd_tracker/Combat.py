@@ -1,5 +1,4 @@
 from collections import Counter, defaultdict
-import hashlib
 import logging
 
 import numpy as np
@@ -251,10 +250,9 @@ class Combat:
         for (source, target, true_amount) in self.campaign._connection.execute(query, values):
             damage_received[target][source] += true_amount
 
-        make_name_color = lambda name: cubeellipse_intensity(int(hashlib.sha1(
-            name.encode()).hexdigest(), base=16)%1024, h=1.3)
         sorted_names = [c.get_numbered_name() for c in self.combatants]
-        name_colors = {}
+        name_colors = defaultdict(lambda:
+                                  cubeellipse_intensity(len(name_colors), h=1.3))
         column_xs = defaultdict(lambda: len(column_xs))
 
         xs = []
@@ -274,7 +272,7 @@ class Combat:
                 bottoms.append(cumulative)
                 heights.append(dest_received[src])
                 cumulative += heights[-1]
-                colors.append(name_colors.setdefault(src, make_name_color(src)))
+                colors.append(name_colors[src])
 
         legend_pieces = [Patch(facecolor=color, edgecolor=None, label=name)
                          for (name, color) in sorted(name_colors.items())]
