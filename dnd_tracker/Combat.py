@@ -1,5 +1,8 @@
 from collections import Counter, defaultdict
+import hashlib
 import logging
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +55,39 @@ for names in _damage_types:
 
 def get_damage_type(type=None):
     return _damage_type_map[type]
+
+def cubeellipse_intensity(theta, lam=0.5, lam_r1=.1, lam_r2=.05, gamma=1., s=0., r=1., h=1.):
+    """Compute a cubeellipse colormap with pseudo-random intensity variations
+
+    cubeellipse_intensity is an analogous colormap to cubehelix, but
+    in an ellipse perpendicular to the color cube diagonal rather than
+    in a helix along the color cube diagonal (with additional
+    intensity variations). It can be used for generating categorical
+    color maps, for example.
+
+    :param theta: angle array for colors
+    :param lam: scalar lambda value about which the ellipse will expand
+    :param lam_r1: major axis of ellipse in `lam` space
+    :param lam_r2: minor axis of ellipse in `lam` space
+    :param gamma: `lam` rescaling factor: `lam <- lam**gamma`
+    :param s: The hue of the starting color: (0, 1, 2) -> (blue, red, green) at `lam=0`
+    :param r: Number of rotations through R->G->B to make (in `lam`-space)
+    :param h: Hue parameter controlling saturation
+    """
+
+    theta %= 2*np.pi
+
+    if lam_r2 is None:
+        lam_r2 = lam_r1
+
+    lamtheta = 1 + 480*np.sqrt(theta) - 1024*theta**2
+    lam = lam + np.cos(lamtheta)*lam_r1 + np.sin(lamtheta)*lam_r2
+    lam = lam**gamma
+
+    a = h*lam*(1 - lam)*.5
+    v = np.array([[-.14861, 1.78277], [-.29227, -.90649], [1.97294, 0.]], dtype=np.float32)
+    ctarray = np.array([np.cos(theta*r + s), np.sin(theta*r + s)], dtype=np.float32)
+    return np.clip(lam + a*v.dot(ctarray), 0, 1).T
 
 class Character:
     def __init__(self, combat, name, initiative, number=None, ac=None, resistances={},
@@ -177,12 +213,18 @@ class Combat:
 
         return combatant
 
-    def plot_damage_summary(self, figure=None):
-        """Create a bar plot of the damage given by each combatant"""
+    def plot_damage_summary(self, figure=None, received=False):
+        """Create a bar plot of the damage given or received by each combatant."""
         if figure is None:
             import matplotlib, matplotlib.pyplot as pp
             figure = pp.figure()
 
+        if received:
+            return self.plot_damage_received(figure)
+        else:
+            return self.plot_damage_given(figure)
+
+    def plot_damage_given(self, figure):
         ax = figure.gca()
         xs = list(range(len(self.combatants)))
         damage_given = defaultdict(lambda: 0)
@@ -196,6 +238,51 @@ class Combat:
         ax.bar(xs, ys)
         ax.set_xticks(xs)
         ax.set_xticklabels([c.get_numbered_name() for c in self.combatants])
+        return figure
+
+    def plot_damage_received(self, figure):
+        from matplotlib.patches import Patch
+
+        ax = figure.gca()
+        damage_received = defaultdict(Counter)
+
+        query = 'SELECT source, target, true_amount FROM damage_given WHERE combat_id = ?'
+        values = (self._db_id,)
+        for (source, target, true_amount) in self.campaign._connection.execute(query, values):
+            damage_received[target][source] += true_amount
+
+        make_name_color = lambda name: cubeellipse_intensity(int(hashlib.sha1(
+            name.encode()).hexdigest(), base=16), h=1.3)
+        sorted_names = [c.get_numbered_name() for c in self.combatants]
+        name_colors = {}
+        column_xs = defaultdict(lambda: len(column_xs))
+
+        xs = []
+        bottoms = []
+        heights = []
+        colors = []
+        for dest in sorted_names:
+            if dest not in damage_received:
+                continue
+            dest_received = damage_received[dest]
+            cumulative = 0
+            for src in sorted_names:
+                if src not in dest_received:
+                    continue
+
+                xs.append(column_xs[dest])
+                bottoms.append(cumulative)
+                heights.append(dest_received[src])
+                cumulative += heights[-1]
+                colors.append(name_colors.setdefault(src, make_name_color(src)))
+
+        legend_pieces = [Patch(facecolor=color, edgecolor=None, label=name)
+                         for (name, color) in sorted(name_colors.items())]
+
+        ax.bar(xs, heights, bottom=bottoms, color=colors)
+        ax.set_xticks(list(range(len(column_xs))))
+        ax.set_xticklabels(list(column_xs.keys()))
+        ax.legend(handles=legend_pieces)
         return figure
 
     def show(self):

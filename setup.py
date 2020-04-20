@@ -17,7 +17,7 @@ setup(name='dnd-tracker',
       description='Library to keep track of tabletop games',
       entry_points={},
       extras_require={},
-      install_requires=[],
+      install_requires=['numpy'],
       license='MIT',
       packages=[
           'dnd_tracker',
