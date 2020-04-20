@@ -252,7 +252,7 @@ class Combat:
             damage_received[target][source] += true_amount
 
         make_name_color = lambda name: cubeellipse_intensity(int(hashlib.sha1(
-            name.encode()).hexdigest(), base=16), h=1.3)
+            name.encode()).hexdigest(), base=16)%1024, h=1.3)
         sorted_names = [c.get_numbered_name() for c in self.combatants]
         name_colors = {}
         column_xs = defaultdict(lambda: len(column_xs))
