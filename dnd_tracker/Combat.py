@@ -236,7 +236,8 @@ class Combat:
         ys = [damage_given[c.get_numbered_name()] for c in self.combatants]
         ax.bar(xs, ys)
         ax.set_xticks(xs)
-        ax.set_xticklabels([c.get_numbered_name() for c in self.combatants])
+        ax.set_xticklabels([c.get_numbered_name() for c in self.combatants],
+                           rotation=45, ha='right')
         return figure
 
     def plot_damage_received(self, figure):
@@ -279,7 +280,7 @@ class Combat:
 
         ax.bar(xs, heights, bottom=bottoms, color=colors)
         ax.set_xticks(list(range(len(column_xs))))
-        ax.set_xticklabels(list(column_xs.keys()))
+        ax.set_xticklabels(list(column_xs.keys()), rotation=45, ha='right')
         ax.legend(handles=legend_pieces)
         return figure
 
