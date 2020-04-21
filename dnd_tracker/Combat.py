@@ -231,7 +231,8 @@ class Combat:
         query = 'SELECT source, true_amount FROM damage_given WHERE combat_id = ?'
         values = (self._db_id,)
         for (source, true_amount) in self.campaign._connection.execute(query, values):
-            damage_given[source] += true_amount
+            # ignore healing given as negative damage
+            damage_given[source] += max(0, true_amount)
 
         ys = [damage_given[c.get_numbered_name()] for c in self.combatants]
         ax.bar(xs, ys)
@@ -250,7 +251,8 @@ class Combat:
         query = 'SELECT source, target, true_amount FROM damage_given WHERE combat_id = ?'
         values = (self._db_id,)
         for (source, target, true_amount) in self.campaign._connection.execute(query, values):
-            damage_received[target][source] += true_amount
+            # ignore healing given as negative damage
+            damage_received[target][source] += max(0, true_amount)
 
         sorted_names = [c.get_numbered_name() for c in self.combatants]
         name_colors = defaultdict(lambda:
