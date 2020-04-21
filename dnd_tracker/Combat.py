@@ -238,6 +238,7 @@ class Combat:
         ax.set_xticks(xs)
         ax.set_xticklabels([c.get_numbered_name() for c in self.combatants],
                            rotation=45, ha='right')
+        ax.set_title('Damage Given')
         return figure
 
     def plot_damage_received(self, figure):
@@ -282,6 +283,7 @@ class Combat:
         ax.set_xticks(list(range(len(column_xs))))
         ax.set_xticklabels(list(column_xs.keys()), rotation=45, ha='right')
         ax.legend(handles=legend_pieces)
+        ax.set_title('Damage Received')
         return figure
 
     def show(self):
